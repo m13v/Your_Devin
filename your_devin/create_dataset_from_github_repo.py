@@ -1,7 +1,7 @@
 import json
 import requests
-from swarms import OpenAIChat, Agent, Mistral, AbstractLLM
-import os 
+from swarms import Agent, Mistral, AbstractLLM
+import os
 from dotenv import load_dotenv
 
 # Load the environment variables
@@ -33,14 +33,12 @@ def get_github_repo_page(owner: str, repo: str) -> str:
         return None
 
 
-
 def generate_samples(code: str, agent):
     out = agent.run(code)
     return out
 
 
-
-# Create a dataset from the github code -- to 
+# Create a dataset from the github code -- to
 def create_dataset_from_repo(
     model: AbstractLLM,
     file_name: str = "dataset.json",
@@ -56,26 +54,25 @@ def create_dataset_from_repo(
     # Get the GitHub repository page
     owner = os.getenv("GITHUB_OWNER")
     repo = os.getenv("GITHUB_REPO")
-    html_content = get_github_repo_page(owner, repo)
-    
+
     # Agent
     agent = Agent(
-        llm = Mistral(),
+        llm=Mistral(),
         agent_name="Devin",
         max_loops=4,
     )
 
     # Extract the code from the GitHub repository page
-    code = get_github_repo_page(owner = owner, repo = repo)
+    code = get_github_repo_page(owner=owner, repo=repo)
 
     # Generate the dataset
     dataset = []
     for example in code:
         # Generate response from the agent
-        response = agent.generate_response(example)
+        response = agent(example)
 
         # Append example and response to the dataset
-        dataset.append({"from": example, "value": response})
+        dataset.append({"from": code, "value": response})
 
     # Save the dataset to a file
     dataset_path = os.getenv("DATASET_PATH")
