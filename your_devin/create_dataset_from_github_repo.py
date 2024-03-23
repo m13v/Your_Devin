@@ -1,8 +1,9 @@
 import json
-import requests
-from swarms import Agent, Mistral, AbstractLLM
 import os
+
+import requests
 from dotenv import load_dotenv
+from swarms import AbstractLLM, Agent, Mistral
 
 # Load the environment variables
 load_dotenv()
@@ -33,9 +34,33 @@ def get_github_repo_page(owner: str, repo: str) -> str:
         return None
 
 
-def generate_samples(code: str, agent):
-    out = agent.run(code)
-    return out
+def get_github_repo_files(owner: str, repo: str) -> list:
+    """
+    Retrieves the content of all Python files in a GitHub repository.
+
+    Args:
+        owner (str): The owner of the GitHub repository.
+        repo (str): The name of the GitHub repository.
+
+    Returns:
+        list: A list of strings, each representing the content of a Python file.
+
+    """
+    try:
+        url = f"https://api.github.com/repos/{owner}/{repo}/contents"
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for non-200 status codes
+        files = response.json()
+        python_files = []
+        for file in files:
+            if file["name"].endswith(".py"):
+                file_url = file["download_url"]
+                file_content = requests.get(file_url).text
+                python_files.append(file_content)
+        return python_files
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
+        return []
 
 
 # Create a dataset from the github code -- to
