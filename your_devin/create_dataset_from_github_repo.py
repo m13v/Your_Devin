@@ -134,11 +134,13 @@ def create_dataset_from_repo(
     # Generate the dataset
     dataset = []
 
-    # Get the response from the model
-    response = agent(get_qa_prompt(code))
+    # Iterate over each python file
+    for file_content in code:
+        # Get the response from the model
+        response = agent(get_qa_prompt(file_content))
 
-    # Append example and response to the dataset
-    dataset.append({"from": code, "value": response})
+        # Append example and response to the dataset
+        dataset.append({"from": file_content, "value": response})
 
     # Save the dataset to a file
     dataset_path = os.getenv("DATASET_PATH")
@@ -148,3 +150,7 @@ def create_dataset_from_repo(
     print(f"Dataset saved to: {dataset_path}")
 
     return dataset
+
+
+if __name__ == "__main__":
+    create_dataset_from_repo()
