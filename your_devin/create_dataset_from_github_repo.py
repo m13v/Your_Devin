@@ -108,7 +108,7 @@ def fetch_code_from_github(owner: str, repo: str) -> str:
 
 # Create a dataset from the github code -- to
 def create_dataset_from_repo(
-    model: AbstractLLM,
+    model: AbstractLLM = Mistral(),
     file_name: str = "dataset.json",
 ):
     """
@@ -132,7 +132,7 @@ def create_dataset_from_repo(
     # Agent
     logger.info("Creating the agent")
     agent = Agent(
-        llm=Mistral(),
+        llm = model,
         agent_name="Devin",
         max_loops=1,
         system_prompt="You're a software developer working on a project. Be helpful and follow instructions",
