@@ -3,7 +3,7 @@ import os
 
 import requests
 from dotenv import load_dotenv
-from swarms import AbstractLLM, Agent, Mistral
+from swarms import AbstractLLM, Agent, TogetherLLM
 from loguru import logger
 
 
@@ -15,7 +15,7 @@ load_dotenv()
 GITHUB_OWNER = os.getenv("GITHUB_OWNER")
 GITHUB_REPO = os.getenv("GITHUB_REPO")
 DATASET_PATH = os.getenv("DATASET_PATH")
-
+TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 
 
 # QA prompt
@@ -108,7 +108,11 @@ def fetch_code_from_github(owner: str, repo: str) -> str:
 
 # Create a dataset from the github code -- to
 def create_dataset_from_repo(
-    model: AbstractLLM = Mistral(),
+    model: AbstractLLM = TogetherLLM(
+        model_name="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        logging_enabled=True,
+        together_api_key=TOGETHER_API_KEY,
+    ),
     file_name: str = "dataset.json",
 ):
     """
@@ -132,7 +136,7 @@ def create_dataset_from_repo(
     # Agent
     logger.info("Creating the agent")
     agent = Agent(
-        llm = model,
+        llm=model,
         agent_name="Devin",
         max_loops=1,
         system_prompt="You're a software developer working on a project. Be helpful and follow instructions",
