@@ -1,0 +1,4 @@
+accelerate
+hf_transfer
+transformers
+
