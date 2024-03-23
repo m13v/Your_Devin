@@ -4,9 +4,22 @@ import os
 import requests
 from dotenv import load_dotenv
 from swarms import AbstractLLM, Agent, Mistral
+from loguru import logger
+
 
 # Load the environment variables
 load_dotenv()
+
+
+# QA prompt
+def get_qa_prompt(code: str):
+    prompt = f"""
+    
+    Write 50 detailed question and answer pairs about the following code, focusing on aspects important to a deep learning researcher. Ensure the questions are specific and address the implementation's nuances: 
+    
+    {code}
+    """
+    return prompt
 
 
 def get_github_repo_page(owner: str, repo: str) -> str:
@@ -25,12 +38,13 @@ def get_github_repo_page(owner: str, repo: str) -> str:
 
     """
     try:
+        logger.info(f"Getting the GitHub repository page: {owner}/{repo}")
         url = f"https://github.com/{owner}/{repo}"
         response = requests.get(url)
         response.raise_for_status()  # Raise an exception for non-200 status codes
         return response.text
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
         return None
 
 
@@ -47,6 +61,9 @@ def get_github_repo_files(owner: str, repo: str) -> list:
 
     """
     try:
+        logger.info(
+            f"Getting the Python files in the GitHub repository: {owner}/{repo}"
+        )
         url = f"https://api.github.com/repos/{owner}/{repo}/contents"
         response = requests.get(url)
         response.raise_for_status()  # Raise an exception for non-200 status codes
@@ -59,10 +76,30 @@ def get_github_repo_files(owner: str, repo: str) -> list:
                 python_files.append(file_content)
         return python_files
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
         return []
+    
+    
+def fetch_code_from_github(owner: str, repo: str) -> str:
+    """
+    Fetches the code from a GitHub repository.
 
+    Args:
+        owner (str): The owner of the GitHub repository.
+        repo (str): The name of the GitHub repository.
 
+    Returns:
+        str: The code from the GitHub repository.
+
+    """
+    code = get_github_repo_files(owner=owner, repo=repo)
+    
+    # Combine all the code files into a single string
+    code = "\n".join(code)
+    return code
+
+    
+    
 # Create a dataset from the github code -- to
 def create_dataset_from_repo(
     model: AbstractLLM,
@@ -79,12 +116,18 @@ def create_dataset_from_repo(
     # Get the GitHub repository page
     owner = os.getenv("GITHUB_OWNER")
     repo = os.getenv("GITHUB_REPO")
+    
+    
+    # Get code
+    code = fetch_code_from_github(owner=owner, repo=repo)
 
     # Agent
     agent = Agent(
         llm=Mistral(),
         agent_name="Devin",
-        max_loops=4,
+        max_loops=1,
+        system_prompt="You're a software developer working on a project. Be helpful and follow instructions",
+        sop=get_qa_prompt(code),
     )
 
     # Extract the code from the GitHub repository page

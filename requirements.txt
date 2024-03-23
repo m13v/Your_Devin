@@ -1,4 +1,5 @@
 accelerate
 hf_transfer
 transformers
-
+swarms
+loguru
