@@ -6,6 +6,11 @@ from argparse import Namespace
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+__references__ = [
+    "https://huggingface.co/NousResearch/Genstruct-7B",
+    "https://huggingface.co/spaces/HuggingFaceH4/starchat-playground",
+]
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )

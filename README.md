@@ -1,5 +1,9 @@
 # References
 
+## Model
+
+> `wget https://models.mistralcdn.com/mistral-7b-v0-2/mistral-7B-v0.2.tar`
+
 * [Docs](https://docs.google.com/document/d/1r_py6NKI6P2VVU4OMVtZ4b4bDfZAbOBQIBuP3_6Im3E/mobilebasic)
 
 * [Ada-Instruct: Adapting Instruction Generators for Complex Reasoning](https://arxiv.org/abs/2310.04484)
