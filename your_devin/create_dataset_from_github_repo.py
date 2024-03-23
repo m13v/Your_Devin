@@ -11,6 +11,13 @@ from loguru import logger
 load_dotenv()
 
 
+# ENVs
+GITHUB_OWNER = os.getenv("GITHUB_OWNER")
+GITHUB_REPO = os.getenv("GITHUB_REPO")
+DATASET_PATH = os.getenv("DATASET_PATH")
+
+
+
 # QA prompt
 def get_qa_prompt(code: str):
     prompt = f"""
