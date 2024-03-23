@@ -78,8 +78,8 @@ def get_github_repo_files(owner: str, repo: str) -> list:
     except requests.exceptions.RequestException as e:
         logger.error(f"An error occurred: {e}")
         return []
-    
-    
+
+
 def fetch_code_from_github(owner: str, repo: str) -> str:
     """
     Fetches the code from a GitHub repository.
@@ -93,13 +93,12 @@ def fetch_code_from_github(owner: str, repo: str) -> str:
 
     """
     code = get_github_repo_files(owner=owner, repo=repo)
-    
+
     # Combine all the code files into a single string
     code = "\n".join(code)
     return code
 
-    
-    
+
 # Create a dataset from the github code -- to
 def create_dataset_from_repo(
     model: AbstractLLM,
@@ -112,35 +111,34 @@ def create_dataset_from_repo(
         model (AbstractLLM): The language model to use for generating the dataset.
         file_name (str): The name of the output JSON file.
 
+    Returns:
+        dict: The dataset containing the code and model responses.
+
     """
     # Get the GitHub repository page
     owner = os.getenv("GITHUB_OWNER")
     repo = os.getenv("GITHUB_REPO")
-    
-    
+
     # Get code
     code = fetch_code_from_github(owner=owner, repo=repo)
 
     # Agent
+    logger.info("Creating the agent")
     agent = Agent(
         llm=Mistral(),
         agent_name="Devin",
         max_loops=1,
         system_prompt="You're a software developer working on a project. Be helpful and follow instructions",
-        sop=get_qa_prompt(code),
     )
-
-    # Extract the code from the GitHub repository page
-    code = get_github_repo_page(owner=owner, repo=repo)
 
     # Generate the dataset
     dataset = []
-    for example in code:
-        # Generate response from the agent
-        response = agent(example)
 
-        # Append example and response to the dataset
-        dataset.append({"from": code, "value": response})
+    # Get the response from the model
+    response = agent(get_qa_prompt(code))
+
+    # Append example and response to the dataset
+    dataset.append({"from": code, "value": response})
 
     # Save the dataset to a file
     dataset_path = os.getenv("DATASET_PATH")
@@ -148,3 +146,5 @@ def create_dataset_from_repo(
         json.dump(dataset, file)
 
     print(f"Dataset saved to: {dataset_path}")
+
+    return dataset
