@@ -9,30 +9,23 @@ session.headers = {
     "Accept": "application/json",
     "Accept-Encoding": "deflate, gzip",
     "Content-Type": "application/json",
-    "Authorization": f"Bearer {jwt_code}"
+    "Authorization": f"Bearer {jwt_code}",
 }
 
 session.mount(
     "https://",
     HTTPAdapter(
-        max_retries=Retry(
-            total=5, backoff_factor=1, status_forcelist=[502, 503, 504]
-        )
+        max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[502, 503, 504])
     ),
 )
 
+text = ...
+
 url = "https://api.mistral.ai/v1/chat/completions"
 model = "mistral-large-latest"
-messages = [{"role": "user", "content": "Who is the most renowned French painter?"}]
+messages = [{"role": "user", "content": text}]
 
 response = session.post(url, json={"model": model, "messages": messages})
 response.raise_for_status()
 
-# curl --location "https://api.mistral.ai/v1/chat/completions" \
-#      --header 'Content-Type: application/json' \
-#      --header 'Accept: application/json' \
-#      --header "Authorization: Bearer $MISTRAL_API_KEY" \
-#      --data '{
-#     "model": "mistral-large-latest",
-#     "messages": [{"role": "user", "content": "Who is the most renowned French painter?"}]
-#   }'
+print(response.json()["choices"][0]["message"]["content"])
