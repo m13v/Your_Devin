@@ -1,25 +1,26 @@
 import json
 import os
+from typing import List
 
 import requests
 from dotenv import load_dotenv
-from swarms import AbstractLLM, Agent, TogetherLLM
 from loguru import logger
-
+from swarms import Agent, OpenAIChat
 
 # Load the environment variables
 load_dotenv()
 
 
 # ENVs
-GITHUB_OWNER = os.getenv("GITHUB_OWNER")
-GITHUB_REPO = os.getenv("GITHUB_REPO")
+owner = os.getenv("GITHUB_OWNER")
+repo = os.getenv("GITHUB_REPO")
 DATASET_PATH = os.getenv("DATASET_PATH")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 # QA prompt
-def get_qa_prompt(code: str):
+def get_qa_prompt(code: str) -> str:
     prompt = f"""
     
     Write 50 detailed question and answer pairs about the following code, focusing on aspects important to a deep learning researcher. Ensure the questions are specific and address the implementation's nuances: 
@@ -29,49 +30,37 @@ def get_qa_prompt(code: str):
     return prompt
 
 
-def get_github_repo_page(owner: str, repo: str) -> str:
-    """
-    Retrieves the HTML content of a GitHub repository page.
-
-    Args:
-        owner (str): The owner of the GitHub repository.
-        repo (str): The name of the GitHub repository.
-
-    Returns:
-        str: The HTML content of the GitHub repository page.
-
-    Raises:
-        requests.exceptions.RequestException: If an error occurs while making the request.
-
-    """
-    try:
-        logger.info(f"Getting the GitHub repository page: {owner}/{repo}")
-        url = f"https://github.com/{owner}/{repo}"
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for non-200 status codes
-        return response.text
-    except requests.exceptions.RequestException as e:
-        logger.error(f"An error occurred: {e}")
-        return None
-
-
-def get_github_repo_files(owner: str, repo: str) -> list:
+def get_github_repo_files(
+    owner: str = None, repo: str = None, repo_url: str = None
+) -> List[str]:
     """
     Retrieves the content of all Python files in a GitHub repository.
 
     Args:
-        owner (str): The owner of the GitHub repository.
-        repo (str): The name of the GitHub repository.
+        owner (str, optional): The owner of the GitHub repository.
+        repo (str, optional): The name of the GitHub repository.
+        repo_url (str, optional): The URL of the GitHub repository.
 
     Returns:
         list: A list of strings, each representing the content of a Python file.
 
     """
     try:
+        if repo_url is None:
+            if owner is None or repo is None:
+                logger.error(
+                    "Please provide either a repo_url or both owner"
+                    " and repo parameters."
+                )
+                return []
+            url = f"https://api.github.com/repos/{owner}/{repo}/contents"
+        else:
+            url = repo_url
+
         logger.info(
-            f"Getting the Python files in the GitHub repository: {owner}/{repo}"
+            "Getting the Python files in the GitHub repository:"
+            f" {owner}/{repo}"
         )
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents"
         response = requests.get(url)
         response.raise_for_status()  # Raise an exception for non-200 status codes
         files = response.json()
@@ -80,88 +69,65 @@ def get_github_repo_files(owner: str, repo: str) -> list:
             if file["name"].endswith(".py"):
                 file_url = file["download_url"]
                 file_content = requests.get(file_url).text
+                logger.info(f"Found Python file: {file['name']}")
+                logger.info(f"Content: {file_content[:100]}...")
                 python_files.append(file_content)
-        return python_files
+        return python_files, file_content, file_url
     except requests.exceptions.RequestException as e:
         logger.error(f"An error occurred: {e}")
         return []
 
 
-def fetch_code_from_github(owner: str, repo: str) -> str:
-    """
-    Fetches the code from a GitHub repository.
+model = OpenAIChat(openai_api_key=OPENAI_API_KEY, max_tokens=4000)
 
-    Args:
-        owner (str): The owner of the GitHub repository.
-        repo (str): The name of the GitHub repository.
-
-    Returns:
-        str: The code from the GitHub repository.
-
-    """
-    code = get_github_repo_files(owner=owner, repo=repo)
-
-    # Combine all the code files into a single string
-    code = "\n".join(code)
-    return code
-
-
-# Create a dataset from the github code -- to
-def create_dataset_from_repo(
-    model: AbstractLLM = TogetherLLM(
-        model_name="mistralai/Mixtral-8x7B-Instruct-v0.1",
-        logging_enabled=True,
-        together_api_key=TOGETHER_API_KEY,
+logger.info("Creating the agent")
+agent = Agent(
+    agent_name="Developer Agent",
+    agent_description=(
+        "Be a developer assistant by generating questions and answers"
+        " about code. Be helpful and insightful!"
     ),
-    file_name: str = "dataset.json",
-):
-    """
-    Create a dataset from a GitHub repository.
+    llm=model,
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+)
 
-    Args:
-        model (AbstractLLM): The language model to use for generating the dataset.
-        file_name (str): The name of the output JSON file.
+# Get code
+code, file_content, url = get_github_repo_files(
+    owner=owner, repo=repo
+)
+file_content = str(file_content)
 
-    Returns:
-        dict: The dataset containing the code and model responses.
+# Agent
+logger.info("Creating the agent")
+# Generate the dataset
+dataset = []
 
-    """
-    # Get the GitHub repository page
-    owner = os.getenv("GITHUB_OWNER")
-    repo = os.getenv("GITHUB_REPO")
 
-    # Get code
-    code = fetch_code_from_github(owner=owner, repo=repo)
-
-    # Agent
-    logger.info("Creating the agent")
-    agent = Agent(
-        llm=model,
-        agent_name="Devin",
-        max_loops=1,
-        system_prompt="You're a software developer working on a project. Be helpful and follow instructions",
-    )
-
-    # Generate the dataset
-    dataset = []
-
+for code in code:
     # Iterate over each python file
-    for file_content in code:
-        # Get the response from the model
-        response = agent(get_qa_prompt(file_content))
+    # Get the response from the model
+    response = model(f"""
+        Write 50 detailed question and answer pairs about the following code, focusing on aspects important to a deep learning researcher. Ensure the questions are specific and address the implementation's nuances: 
 
-        # Append example and response to the dataset
-        dataset.append({"from": file_content, "value": response})
+        {file_content}
+        """)
+    response = str(response)
+    logger.info(f"Response: {response}")
 
-    # Save the dataset to a file
-    dataset_path = os.getenv("DATASET_PATH")
-    with open(dataset_path, "w") as file:
-        json.dump(dataset, file)
+    # Append example and response to the dataset
+    dataset.append({"code": file_content, "qa": response})
 
-    print(f"Dataset saved to: {dataset_path}")
+    # Sample added to the dataset
+    logger.info("Sample added to the dataset:")
 
-    return dataset
+logger.info(f"Dataset: {dataset}")
 
-
-if __name__ == "__main__":
-    create_dataset_from_repo()
+# Save the dataset to a file
+dataset_path = os.getenv("DATASET_PATH")
+with open(dataset_path, "w") as file:
+    json.dump(dataset, file)
