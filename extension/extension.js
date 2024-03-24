@@ -10,6 +10,7 @@ const workspace = require('vscode').workspace;
 let customTerminal = vscode.window.createTerminal('smartcallhierarchy Terminal'); // Declare a variable to store the terminal
 const textPath = path.join(__dirname, './doc2cli.txt');
 const { chat } = require('vscode');
+let currentPanel = null; // Add this line at the top level, outside of the activate function
 
 class FunctionCodeLensProvider {
     provideCodeLenses(document, token) {
@@ -173,7 +174,43 @@ function activate(context) {
 
     context.subscriptions.push(disposableWebview2);
 
+    // Register the webview command for "Start Chatting"
+    let disposableStartChatting = vscode.commands.registerCommand('smartcallhierarchy.startChatting', function () {
+        if (currentPanel) {
+            currentPanel.dispose(); // Close the current panel if it's open
+        }
+    
+        // Create a new webview panel for chatting
+        currentPanel = vscode.window.createWebviewPanel(
+            'chatWebview', // Identifies the type of the webview. Used internally
+            'Chat Webview', // Title of the panel displayed to the user
+            vscode.ViewColumn.One, // Editor column to show the new webview panel in.
+            { enableScripts: true } // Enable scripts in the webview
+        );
+    
+        currentPanel.webview.html = getWebviewContent(); // Set the content of the new webview
+    
+        // Add this panel to the context's subscriptions
+        context.subscriptions.push(currentPanel);
+    });
 
+    context.subscriptions.push(disposableStartChatting);
+
+    // Assuming you have a mechanism to receive messages from the webview, like in your existing code
+    // You need to handle the 'startChatting' command
+    // This part depends on how you've set up message passing in your extension
+    // For example, if you're using a webviewPanel, you might have something like this:
+    if (currentPanel) {
+        currentPanel.webview.onDidReceiveMessage(
+            message => {
+                if (message.command === 'startChatting') {
+                    vscode.commands.executeCommand('smartcallhierarchy.startChatting');
+                }
+            },
+            undefined,
+            context.subscriptions
+        );
+    }
 
     const chatProvider = new ChatProvider();
     vscode.window.registerTreeDataProvider('chatPanel', chatProvider);
@@ -223,7 +260,7 @@ function getWebviewContent() {
     <head>
         <meta charset="UTF-8">
         <!-- Include the CSP meta tag below -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; frame-src http://localhost:5173; style-src 'self' 'unsafe-inline';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; frame-src http://35.88.110.113:5173; style-src 'self' 'unsafe-inline';">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Your Webview Title</title>
     <style>
@@ -244,7 +281,7 @@ function getWebviewContent() {
     </style>
     </head>
     <body>
-        <iframe src="http://localhost:5173/" width="100%" height="100%"></iframe>
+        <iframe src="http://35.88.110.113:5173/" width="100%" height="100%"></iframe>
     </body>
     </html>`;
 }
@@ -266,42 +303,177 @@ function getWebviewContent2() {
             display: flex;
             flex-direction: column;
         }
-        button {
+        button, .repo-item {
             margin-bottom: 5px;
             padding: 10px;
             width: 100%;
             font-size: 16px;
             cursor: pointer;
+            background-color: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            text-align: left;
         }
-        #authorize {
-            background-color: black;
-            color: white; /* Change text color to white for better contrast */
+        .repo-item {
+            background-color: transparent;
+            color: white;
         }
+        .authorized {
+            background-color: green;
+        }
+        #repoList {
+            display: none;
+            margin-top: 10px;
+        }
+        #repoList ul {
+            list-style: none;
+            padding: 0;
+        }
+        #repoList li {
+            cursor: pointer;
+        }
+        /* Loading animation styles */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 30px;
+            height: 30px;
+            -webkit-animation: spin 2s linear infinite; /* Safari */
+            animation: spin 2s linear infinite;
+        }
+        /* Safari */
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #a {
+            margin-bottom: 20px; /* Adjust the space as needed */
+        }
+        #counter {
+            display: none;
+            font-size: 300%; /* Makes the font size three times larger */
+        }
+        
     </style>
 </head>
 <body>
     <div id="button-container">
         <button id="authorize">Authorize GitHub Access</button>
         <button id="chooseRepo">Choose GitHub Repo</button>
+        <div id="repoList" style="display:none;">
+            <ul>
+                <li class="repo-item">Your_Devin</li>
+                <li class="repo-item">Sema</li>
+                <li class="repo-item">Mistral hackathon</li>
+                <li class="repo-item">Tryon</li>
+                <li class="repo-item">Weirdos</li>
+            </ul>
+        </div>
         <button id="generateDataset">Generate Synthetic Dataset</button>
+        <div id="loading" style="display:none;" class="loader"></div>
+        <div id="counter" style="display:none;">10</div>
+        <a id="huggingFaceLink" style="display:none; margin-bottom: 20px;" href="https://huggingface.co/datasets/Glavin001/devin-2024-03-24-17-25-22?row=0" target="_blank">Visit the dataset on Hugging Face</a>
         <button id="startFineTuning">Start Fine-Tuning</button>
-        <button id="startChatting">Start Chatting</button>
+        <div id="fineTuningLoading" style="display:none;" class="loader"></div>
+        <div id="fineTuningCounter" style="display:none;">00:00:00</div>
     </div>
 
     <script>
         const vscode = acquireVsCodeApi();
         
-        document.getElementById('authorize').addEventListener('click', () => {
-            // Change the button text to "Authorized"
-            document.getElementById('authorize').textContent = 'Authorized';
-            // Post a message back to the extension if needed
+        const authorizeButton = document.getElementById('authorize');
+        authorizeButton.addEventListener('click', () => {
+            authorizeButton.textContent = 'Authorized';
+            authorizeButton.classList.add('authorized');
             vscode.postMessage({
                 command: 'authorize',
                 text: 'Authorized'
             });
         });
 
-        // Add similar event listeners for other buttons...
+        document.getElementById('chooseRepo').addEventListener('click', () => {
+            const repoList = document.getElementById('repoList');
+            repoList.style.display = repoList.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Add click event listeners to repo items
+        const repoItems = document.querySelectorAll('.repo-item');
+        repoItems.forEach(item => {
+            item.addEventListener('click', () => {
+                repoItems.forEach(i => i.classList.remove('authorized'));
+                item.classList.add('authorized');
+                vscode.postMessage({
+                    command: 'selectRepo',
+                    text: item.textContent
+                });
+            });
+        });
+
+        document.getElementById('generateDataset').addEventListener('click', () => {
+            // Show loading animation and counter
+            const loading = document.getElementById('loading');
+            const counter = document.getElementById('counter');
+            loading.style.display = 'block';
+            counter.style.display = 'block';
+            let timeLeft = 10; // 10 seconds countdown
+            counter.textContent = timeLeft;
+        
+            const intervalId = setInterval(() => {
+                timeLeft--;
+                counter.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(intervalId);
+                    loading.style.display = 'none';
+                    counter.style.display = 'none';
+                    document.getElementById('huggingFaceLink').style.display = 'block';
+                }
+            }, 1000); // Update counter every second
+        });
+
+        document.getElementById('startFineTuning').addEventListener('click', () => {
+            // Show loading animation and counter specific to fine-tuning
+            const fineTuningLoading = document.getElementById('fineTuningLoading');
+            const fineTuningCounter = document.getElementById('fineTuningCounter');
+            fineTuningLoading.style.display = 'block';
+            fineTuningCounter.style.display = 'block';
+        
+            let timeLeft = 5 * 60 * 60; // 5 hours in seconds
+            updateFineTuningCounter(timeLeft);
+        
+            const intervalId = setInterval(() => {
+                timeLeft--;
+                updateFineTuningCounter(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(intervalId);
+                    fineTuningLoading.style.display = 'none';
+                    fineTuningCounter.style.display = 'none';
+                    // Additional actions after the countdown
+                }
+            }, 1000); // Update counter every second
+        });
+        
+        function updateFineTuningCounter(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            let minutes = Math.floor((seconds % 3600) / 60);
+            let secs = seconds % 60;
+        
+            // Ensuring two digits for minutes and seconds
+            minutes = minutes.toString().padStart(2, '0');
+            secs = secs.toString().padStart(2, '0');
+        
+            const fineTuningCounter = document.getElementById('fineTuningCounter');
+            fineTuningCounter.textContent = hours + ":" + minutes + ":" + secs;
+        }
+
+        document.getElementById('startChatting').addEventListener('click', () => {
+            vscode.postMessage({ command: 'startChatting' });
+        });
 
     </script>
 </body>
@@ -310,17 +482,17 @@ function getWebviewContent2() {
 
 function deactivate() {}
 
-function fetchExternalContent() {
-    return new Promise((resolve, reject) => {
-        exec('curl http://35.88.110.113:5173/', (error, stdout, stderr) => {
-            if (error) {
-                console.error(`exec error: ${error}`);
-                return reject(error);
-            }
-            resolve(stdout);
-        });
-    });
-}
+// function fetchExternalContent() {
+//     return new Promise((resolve, reject) => {
+//         exec('curl http://35.88.110.113:5173/', (error, stdout, stderr) => {
+//             if (error) {
+//                 console.error(`exec error: ${error}`);
+//                 return reject(error);
+//             }
+//             resolve(stdout);
+//         });
+//     });
+// }
 
 module.exports = {
     activate,
