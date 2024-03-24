@@ -4,4 +4,15 @@
 __pycache__
 *.log
 
+data/*
+!data/.gitkeep
+# Keep some examples
+!data/code/model.py
+
+.env
+.env*
+
+auth.ini
+firectl
+
 node_modules/

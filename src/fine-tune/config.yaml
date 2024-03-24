@@ -1,0 +1,11 @@
+# The ID of the dataset you created above.
+# TODO: change dataset ID
+dataset: philschmid-guanaco-sharegpt-style
+
+conversation: {}
+
+# The Hugging Face model name of the base model.
+base_model: mistralai/Mistral-7B-v0.1
+# base_model: alpindale/Mistral-7B-v0.2-hf # Not supported, sigh
+
+# firectl create fine-tuning-job --settings-file path/to/settings.yaml --display-name "My Job"

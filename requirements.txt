@@ -3,3 +3,7 @@ hf_transfer
 transformers
 swarms
 loguru
+requests
+datasets
+dotenv
+pyyaml
