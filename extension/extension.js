@@ -260,7 +260,7 @@ function getWebviewContent() {
     <head>
         <meta charset="UTF-8">
         <!-- Include the CSP meta tag below -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; frame-src http://35.88.110.113:5173; style-src 'self' 'unsafe-inline';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; frame-src http://localhost:5173; style-src 'self' 'unsafe-inline';">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Your Webview Title</title>
     <style>
@@ -281,7 +281,7 @@ function getWebviewContent() {
     </style>
     </head>
     <body>
-        <iframe src="http://35.88.110.113:5173/" width="100%" height="100%"></iframe>
+        <iframe src="http://localhost:5173/" width="100%" height="100%"></iframe>
     </body>
     </html>`;
 }
