@@ -20,7 +20,11 @@
     "commands": [
       {
         "command": "smartcallhierarchy.showWebview",
-        "title": "Show Call Hierarchy Webview"
+        "title": "Chat"
+      },
+      {
+        "command": "smartcallhierarchy.showWebview2",
+        "title": "Login"
       },
       {
         "command": "smartcallhierarchy.execute",

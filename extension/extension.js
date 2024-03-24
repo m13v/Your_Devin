@@ -145,6 +145,36 @@ function activate(context) {
 
     context.subscriptions.push(disposableWebview);
 
+    let disposableWebview2 = vscode.commands.registerCommand('smartcallhierarchy.showWebview2', function () {
+        const panel = vscode.window.createWebviewPanel(
+            'yourWebview', // Identifies the type of the webview. Used internally
+            'Your Webview Title', // Title of the panel displayed to the user
+            vscode.ViewColumn.Beside, // Editor column to show the new webview panel in.
+            {
+                enableScripts: true // Enable scripts in the webview
+            }
+        );
+
+        panel.webview.html = getWebviewContent2();
+
+        panel.webview.onDidReceiveMessage(
+            message => {
+                switch (message.command) {
+                    case 'authorize':
+                        // Handle GitHub authorization
+                        break;
+                    // Handle other commands similarly...
+                }
+            },
+            undefined,
+            context.subscriptions
+        );
+    });
+
+    context.subscriptions.push(disposableWebview2);
+
+
+
     const chatProvider = new ChatProvider();
     vscode.window.registerTreeDataProvider('chatPanel', chatProvider);
 
@@ -219,6 +249,64 @@ function getWebviewContent() {
     </html>`;
 }
 {/* <iframe src="http://35.88.110.113:5173/" width="100%" height="500px"></iframe> */}
+
+function getWebviewContent2() {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Actions</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 10px;
+        }
+        #button-container {
+            display: flex;
+            flex-direction: column;
+        }
+        button {
+            margin-bottom: 5px;
+            padding: 10px;
+            width: 100%;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #authorize {
+            background-color: black;
+            color: white; /* Change text color to white for better contrast */
+        }
+    </style>
+</head>
+<body>
+    <div id="button-container">
+        <button id="authorize">Authorize GitHub Access</button>
+        <button id="chooseRepo">Choose GitHub Repo</button>
+        <button id="generateDataset">Generate Synthetic Dataset</button>
+        <button id="startFineTuning">Start Fine-Tuning</button>
+        <button id="startChatting">Start Chatting</button>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+        
+        document.getElementById('authorize').addEventListener('click', () => {
+            // Change the button text to "Authorized"
+            document.getElementById('authorize').textContent = 'Authorized';
+            // Post a message back to the extension if needed
+            vscode.postMessage({
+                command: 'authorize',
+                text: 'Authorized'
+            });
+        });
+
+        // Add similar event listeners for other buttons...
+
+    </script>
+</body>
+</html>`;
+}
 
 function deactivate() {}
 
