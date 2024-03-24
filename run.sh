@@ -3,4 +3,4 @@
 # python path add src/ in CWD
 export PYTHONPATH=$PYTHONPATH:$(pwd)/src/
 
-python3 ./src/generate/simple.py
+python ./src/generate/simple.py

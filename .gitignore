@@ -16,3 +16,5 @@ auth.ini
 firectl
 
 node_modules/
+.idea
+idea/
