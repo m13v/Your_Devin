@@ -6,6 +6,11 @@ __pycache__
 
 data/*
 !data/.gitkeep
+# Keep some examples
+!data/code/model.py
 
 .env
 .env*
+
+auth.ini
+firectl
