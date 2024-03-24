@@ -1,0 +1,92 @@
+{
+  "name": "smartcallhierarchy",
+  "displayName": "smart_call_hierarchy",
+  "description": "Similar to VS Code's \"Call Hierarchy\" feature, this extension generates a function call hierarchy when you're trying to understand how a given function is used within a codebase. Additionally, it provides explanations for each function and their relationships",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:python",
+    "onCommand:smartcallhierarchy.openChatPanel",
+    "onView:chatPanel",
+    "*"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "smartcallhierarchy.showWebview",
+        "title": "Show Call Hierarchy Webview"
+      },
+      {
+        "command": "smartcallhierarchy.execute",
+        "title": "Smart Call Hierarchy"
+      },
+      {
+        "command": "extension.runFunction",
+        "title": "Run Function"
+      },
+      {
+        "command": "extension.addChatMessage",
+        "title": "Add Chat Message"
+      },
+      {
+        "command": "smartcallhierarchy.openChatPanel",
+        "title": "Open Chat Panel"
+    }  
+    ],
+    "menus": {
+      "commandPalette": [
+          {
+              "command": "smartcallhierarchy.openChatPanel",
+              "when": "true"
+          }
+      ]
+  },
+    "chatParticipants": [
+        {
+            "id": "your.unique.participant.id",
+            "name": "Your Chat Participant",
+            "description": "Provides chat functionality in the sidebar"
+        }
+    ],
+    "viewsContainers": {
+        "activitybar": [
+            {
+                "id": "chatSidebar",
+                "title": "Chat",
+                "icon": "media/icon.svg"
+            }
+        ]
+    },
+    "views": {
+        "chatSidebar": [
+            {
+                "id": "chatPanel",
+                "name": "Chat Panel"
+            }
+        ]
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.86.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.9"
+  },
+  "extensionDependencies": [
+    "GitHub.copilot"
+  ]
+}
