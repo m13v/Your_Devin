@@ -29,7 +29,15 @@ def save_cache():
     with open("data/cache.yaml", "w") as f:
         yaml.dump(cache, f)
 
-def llm_request(payload):
+def llm_request(payload_override = {}):
+    payload = {
+        "model": "mistral-large-latest",
+        "temperature": 0.0,
+        "random_seed": 42,
+        "max_tokens": 10000,
+        **payload_override,
+    }
+
     key = json.dumps(payload)
     if key in cache:
         print("Skipping request, cached")
@@ -58,17 +66,9 @@ def _llm_request(payload):
         ),
     )
 
-    payload_with_defaults = {
-        "model": "mistral-large-latest",
-        "temperature": 0.0,
-        "random_seed": 42,
-        "max_tokens": 100,
-        **payload,
-    }
-
     url = "https://api.mistral.ai/v1/chat/completions"
     # print(payload_with_defaults)
-    response = session.post(url, json=payload_with_defaults)
+    response = session.post(url, json=payload)
     response.raise_for_status()
 
     result = response.json()["choices"][0]["message"]["content"]
