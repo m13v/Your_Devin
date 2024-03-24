@@ -8,16 +8,18 @@ import logging
 import time
 from argparse import Namespace
 from typing import List, Optional
-
 import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+
+
+# import requests
+# from requests.adapters import HTTPAdapter
+# from requests.packages.urllib3.util.retry import Retry
 
 import os
+import distutils
 from utils.mistral_api import llm_request
 from utils.files import read_file, write_json_file, write_yaml_file, write_jsonl_file
 from utils.logger import log
-
 from generate.types import Role, Message, Conversation
 
 args = Namespace(
@@ -73,7 +75,7 @@ def second_round_generation(
             results.append(convo.dict())
             log.info(f"completed {i + 1} / {len(questions)}")
 
-            # if i == 15:
+            # if i == 6:
             #     break
 
         except Exception as e:
@@ -105,17 +107,15 @@ base_model: mistralai/Mistral-7B-v0.1
 def generate_simple():
     datetime = time.strftime("%Y-%m-%d-%H-%M-%S")
     # FIXME: extract other code from repo
-    code = "data/code/model.py"
+
+    code = "data/code/model.py,data/code/model2.py"
 
     questions = generate_list_questions(persona=args.persona, code=code)
-    log.info("Questions:")
-    log.info(len(questions))
 
     # output_path = f"data/questions-{datetime}.json"
     # write_json_file(output_path, questions)
     output_path = f"data/questions-{datetime}.yaml"
     write_yaml_file(output_path, questions)
-
     results = second_round_generation(code=code, questions=questions)
 
     # with gzip.open("output.json.gz", "wb") as f:

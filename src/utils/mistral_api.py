@@ -6,7 +6,6 @@ import os
 import yaml
 
 jwt_code = os.getenv("MISTRAL_API_KEY")
-
 cache = {}
 def load_cache():
     global cache
