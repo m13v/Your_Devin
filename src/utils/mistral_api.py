@@ -19,7 +19,9 @@ def load_cache():
     except FileNotFoundError:
         cache = {}
 
-load_cache()
+cache_enabled = True
+if cache_enabled:
+    load_cache()
 
 def save_cache():
     global cache
@@ -46,8 +48,9 @@ def llm_request(payload_override = {}):
         print("Making request")
         result = _llm_request(payload)
         cache[key] = result
-        # TODO: be smarter about saving, but not bottleneck/priority right now
-        save_cache()
+        if cache_enabled:
+            # TODO: be smarter about saving, but not bottleneck/priority right now
+            save_cache()
         return result
 
 def _llm_request(payload):

@@ -93,7 +93,7 @@ conversation: {{}}
 # The Hugging Face model name of the base model.
 base_model: mistralai/Mistral-7B-v0.1
 """
-    output_path = f"data/fine-tune-config-{datetime}.yaml"
+    output_path = f"data/{datetime}/fine-tune-config.yaml"
     with open(output_path, "w") as f:
         f.write(contents)
 
@@ -113,7 +113,9 @@ def generate_simple():
 
     # output_path = f"data/questions-{datetime}.json"
     # write_json_file(output_path, questions)
-    output_path = f"data/questions-{datetime}.yaml"
+    # ensure data/{datetime} directory exists
+    os.makedirs(f"data/{datetime}", exist_ok=True)
+    output_path = f"data/{datetime}/questions.yaml"
     write_yaml_file(output_path, questions)
 
     results = second_round_generation(code=code, questions=questions)
@@ -123,8 +125,8 @@ def generate_simple():
     # output_path = f"data/conversions-{datetime}.json"
     # write_json_file(output_path, results)
 
-    write_yaml_file(f"data/conversions-{datetime}.yaml", results)
-    write_jsonl_file(f"data/conversions-{datetime}.jsonl", results)
+    write_yaml_file(f"data/{datetime}/conversions.yaml", results)
+    write_jsonl_file(f"data/{datetime}/conversions.jsonl", results)
 
     print()
     print("Upload dataset with:")
