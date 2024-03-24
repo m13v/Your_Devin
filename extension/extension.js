@@ -129,7 +129,7 @@ function activate(context) {
             'Interactive Webview',
             vscode.ViewColumn.Beside,
             {
-                enableScripts: true
+                enableScripts: true,
             }
         );
 
@@ -193,25 +193,28 @@ function getWebviewContent() {
     <head>
         <meta charset="UTF-8">
         <!-- Include the CSP meta tag below -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; frame-src http://localhost:5173;">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; frame-src http://localhost:5173; style-src 'self' 'unsafe-inline';">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Your Webview Title</title>
     <style>
-        body {
-            height: 99vh;
+        html, body {
+            height: 100%;
             width: 100%;
             padding: 0;
             margin: 0;
         }
+        body {
+            background-color: red;
+        }
+        iframe {
+            min-height: 1000px;
+            height: 100%;
+            width: 100%;
+        }
     </style>
     </head>
-    <body width="100%" height="99vh">
-    
-        <!-- Your webview HTML content goes here -->
+    <body>
         <iframe src="http://localhost:5173/" width="100%" height="100%"></iframe>
-        <script>
-            // Your inline script can go here since 'unsafe-inline' is allowed for script-src
-        </script>
     </body>
     </html>`;
 }
