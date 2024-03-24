@@ -3,3 +3,9 @@
 .DS_Store
 __pycache__
 *.log
+
+data/*
+!data/.gitkeep
+
+.env
+.env*
