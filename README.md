@@ -1,4 +1,5 @@
 # References
+Mistral hackathon SF March 24, 2024
 
 ## Model
 
