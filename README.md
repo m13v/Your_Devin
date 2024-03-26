@@ -23,7 +23,7 @@ Mistral hackathon SF March 24, 2024
 Code Generation -> FineTuning
 
 Your Codebase
-
+Visual Studio Code Extension
 
 
 Extract Codebase 
